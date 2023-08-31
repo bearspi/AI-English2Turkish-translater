@@ -2,12 +2,13 @@ import time, os, torch, math, torch.onnx
 from torch import nn
 
 import data, model
+from tqdm.auto import tqdm
 
 device = torch.device('mps' if torch.has_mps else 'cpu')
 
 seed = 81
 
-train_batch_size = 16
+train_batch_size = 20
 
 dim_m = 100
 
@@ -50,9 +51,9 @@ def get_batch(source, i):
     return data, target
 
 
-optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
 
-def train_loop():
+def train_loop(lr: int):
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
     model.train()
     total_loss = 0.
     start_time = time.time()
@@ -78,10 +79,36 @@ def train_loop():
             total_loss = 0
             start_time = time.time()
 
-for epoch in range(1, epochs+1):
+def evaluate_loop(data_source):
+    model.eval()
+    total_loss = 0.
+    start_time = time.time()
+    n_tokens = len(corpus.dictionary)
+    with torch.inference_mode():
+        for i in range(0, data_source.size(0), bptt):
+            data, targets = get_batch(data_source, i)
+            output = model(data)
+            output = output.permute(0, 2, 1)
+            total_loss += len(data) * criterion(output, targets).item()
+    return total_loss / (len(data_source) - 1)
+
+lr = 1
+best_val_loss = None
+
+try:
+    for epoch in tqdm(range(1, epochs+1)):
         epoch_start_time = time.time()
-        train_loop()
+        train_loop(1)
+        val_loss = evaluate_loop(valid_data)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s'.format(epoch, (time.time() - epoch_start_time)))
         print('-' * 89)
-        # Save the model if the validation loss is the best we've seen so far.
+        if not best_val_loss or val_loss < best_val_loss:
+            with open("model.pt", 'wb') as f:
+                torch.save(model, f)
+                best_val_loss = val_loss
+        else:
+            lr /= 4.0
+except KeyboardInterrupt:
+    print('-' * 89)
+    print('Exiting from training early')
