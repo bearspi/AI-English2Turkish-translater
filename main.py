@@ -72,7 +72,7 @@ def train_loop(lr: int):
         if batch % 400 == 0 and batch > 0:
             cur_loss = total_loss / 400
             elapsed = time.time() - start_time
-            print('| epoch {:3d} | {:5d}/{:5d} batches | ms/batch {:5.2f} | '
+            print('\n | epoch {:3d} | {:5d}/{:5d} batches | ms/batch {:5.2f} | '
                     'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, batch, len(train_data) // bptt,
                 elapsed * 1000 / 400, cur_loss, math.exp(cur_loss)))
@@ -98,7 +98,7 @@ best_val_loss = None
 try:
     for epoch in tqdm(range(1, epochs+1)):
         epoch_start_time = time.time()
-        train_loop(1)
+        train_loop(0.1)
         val_loss = evaluate_loop(valid_data)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s'.format(epoch, (time.time() - epoch_start_time)))
@@ -112,3 +112,5 @@ try:
 except KeyboardInterrupt:
     print('-' * 89)
     print('Exiting from training early')
+    
+    
