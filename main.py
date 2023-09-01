@@ -8,14 +8,14 @@ device = torch.device('mps' if torch.has_mps else 'cpu')
 
 seed = 81
 
-train_batch_size = 20
+train_batch_size = 16
 
-dim_m = 100
+dim_m = 512
 
 dropout = 0.5
 
 n_neuron = 200
-n_layers = 2
+n_layers = 6
 
 epochs = 5
 
@@ -40,14 +40,14 @@ test_data = batchify(corpus.test, eval_batch_size)
 
 ntokens = len(corpus.dictionary)
 
-model = model.Transformer(num_tokens=ntokens, dim_model=dim_m, num_heads=2, num_encoder_layers=n_layers, n_hid=n_neuron, dropout_percent=dropout).to(device)
+model = model.Transformer(num_tokens=ntokens, dim_model=dim_m, num_heads=8, num_encoder_layers=n_layers, n_hid=n_neuron, dropout_percent=dropout).to(device)
 
 criterion = nn.CrossEntropyLoss()
 
 def get_batch(source, i):
     seq_len = min(bptt, len(source) - 1 - i)
     data = source[i:i+seq_len]
-    target = source[i+1:i+1+seq_len]  # Align the target with the input data
+    target = source[i+1:i+1+seq_len]
     return data, target
 
 
